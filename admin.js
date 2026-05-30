@@ -151,16 +151,31 @@ function startListeners() {
 function listenTransactions() {
   [
     "coin_transactions",
+    "coinTransactions",
+    "coin_transfers",
+    "coinTransfers",
+    "coin_transfer_transactions",
+    "wallet_transactions",
+    "walletTransactions",
     "premium_transactions",
+    "premiumTransactions",
     "paymongo_payments",
+    "paymongoPayments",
     "paymongo_checkout_sessions",
+    "paymongoCheckoutSessions",
     "processed_paymongo_payments",
+    "processedPaymongoPayments",
     "transactions",
+    "transaction_history",
+    "transactionHistory",
+    "user_transactions",
+    "userTransactions",
   ].forEach((source) => {
     db.ref(source).limitToLast(80).on("value", (snapshot) => {
-      const rows = flattenNode(source, snapshot.val() || {});
+      const rows = flattenNode(canonicalSource(source), snapshot.val() || {})
+        .map((item) => Object.assign({rawSource: source}, item));
       state.transactions = state.transactions
-        .filter((item) => item.source !== source)
+        .filter((item) => item.rawSource !== source)
         .concat(rows);
       renderAll();
     });
@@ -174,13 +189,50 @@ function flattenNode(source, value, parentKey = "") {
     const id = parentKey ? parentKey + "/" + key : key;
     const looksLikeRecord = child && typeof child === "object" && (
       child.status || child.type || child.amount || child.coins ||
-      child.paymentId || child.sessionId || child.timestamp || child.createdAt
+      child.coinsDeducted || child.senderUid || child.receiverUid ||
+      child.fromUid || child.toUid || child.paymentId || child.sessionId ||
+      child.checkoutSessionId || child.timestamp || child.createdAt ||
+      child.updatedAt || child.paidAt || child.completedAt ||
+      (child.data && child.data.attributes) || child.attributes || child.metadata
     );
 
-    if (looksLikeRecord) return [Object.assign({id, source}, child)];
+    if (looksLikeRecord) return [Object.assign({id, source, uid: inferUidFromPath(id, child)}, child)];
     if (child && typeof child === "object") return flattenNode(source, child, id);
     return [{id, source, value: child}];
   });
+}
+
+function inferUidFromPath(id, item) {
+  if (item && (item.uid || item.userId || item.userUID || item.user_uid || item.user_id)) {
+    return item.uid || item.userId || item.userUID || item.user_uid || item.user_id;
+  }
+  const metadataUid = getFirstValue(item, [
+    "metadata.uid",
+    "metadata.userId",
+    "data.attributes.metadata.uid",
+    "data.attributes.metadata.userId",
+    "attributes.metadata.uid",
+    "attributes.metadata.userId",
+  ]);
+  if (metadataUid) return metadataUid;
+  const firstSegment = String(id || "").split("/")[0];
+  if (/^[A-Za-z0-9_-]{20,}$/.test(firstSegment) && !firstSegment.startsWith("cs_") && !firstSegment.startsWith("pay_")) {
+    return firstSegment;
+  }
+  return "";
+}
+
+function canonicalSource(source) {
+  const value = String(source || "");
+  const normalized = value.toLowerCase().replace(/[^a-z0-9]/g, "");
+
+  if (normalized.includes("premium")) return "premium_transactions";
+  if (normalized.includes("checkout")) return "paymongo_checkout_sessions";
+  if (normalized.includes("processedpaymongo")) return "processed_paymongo_payments";
+  if (normalized.includes("paymongo")) return "paymongo_payments";
+  if (normalized.includes("wallet") || normalized.includes("coin") || normalized.includes("transfer")) return "coin_transactions";
+  if (normalized.includes("history")) return "transactions";
+  return value;
 }
 
 function renderAll() {
@@ -196,11 +248,75 @@ function userRows() {
   return Object.entries(state.users).map(([uid, user]) => Object.assign({uid}, user || {}));
 }
 
+function allTransactionRows() {
+  const rows = state.transactions
+    .concat(userTransactionRows())
+    .map(normalizeTransaction)
+    .filter(Boolean);
+  const seen = new Set();
+
+  return rows.filter((item) => {
+    const key = [
+      item.source,
+      item.id,
+      item.uid,
+      item.type,
+      item.status,
+      item.timestamp,
+      item.amount,
+      item.coins,
+      item.coinsDeducted,
+    ].join("|");
+
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function userTransactionRows() {
+  const rows = [];
+  const keys = [
+    "transactions",
+    "transactionHistory",
+    "coinTransactions",
+    "coin_transactions",
+    "walletTransactions",
+    "wallet_transactions",
+    "transferTransactions",
+    "transfer_transactions",
+    "premiumTransactions",
+    "premium_transactions",
+  ];
+
+  Object.entries(state.users).forEach(([uid, user]) => {
+    if (!user || typeof user !== "object") return;
+
+    keys.forEach((key) => {
+      if (user[key] && typeof user[key] === "object") {
+        rows.push(...flattenNode("user_transactions", user[key], uid + "/" + key)
+          .map((item) => Object.assign({uid, originalSource: "users/" + uid + "/" + key}, item)));
+      }
+    });
+
+    if (user.wallet && typeof user.wallet === "object") {
+      ["transactions", "history", "coinTransactions", "transfers"].forEach((key) => {
+        if (user.wallet[key] && typeof user.wallet[key] === "object") {
+          rows.push(...flattenNode("user_transactions", user.wallet[key], uid + "/wallet/" + key)
+            .map((item) => Object.assign({uid, originalSource: "users/" + uid + "/wallet/" + key}, item)));
+        }
+      });
+    }
+  });
+
+  return rows;
+}
+
 function renderDashboard() {
   const users = userRows();
   const pendingIds = users.filter((user) => getIdStatus(user) === "pending" && hasIdUpload(user)).length;
   const pendingDeletion = Object.values(state.deletionRequests).filter((request) => request.status === "pending").length;
-  const payments = state.transactions.filter((item) => item.source.indexOf("paymongo") >= 0).length;
+  const payments = allTransactionRows().filter((item) => item.source.indexOf("paymongo") >= 0).length;
   const revenue = payMongoRevenue();
 
   $("statUsers").textContent = users.length;
@@ -289,8 +405,8 @@ function buildActivityBuckets(days) {
     events.push(item.requestedAt || item.completedAt || item.reviewedAt);
   });
 
-  state.transactions.forEach((item) => {
-    events.push(item.timestamp || item.createdAt || item.updatedAt);
+  allTransactionRows().forEach((item) => {
+    events.push(transactionTimestamp(item));
   });
 
   events.forEach((value) => {
@@ -384,9 +500,10 @@ function renderPaymentBars() {
     ["Payments", "paymongo_payments"],
     ["Processed", "processed_paymongo_payments"],
     ["Premium", "premium_transactions"],
+    ["User coins", "user_transactions"],
   ].map(([label, source]) => ({
     label,
-    value: state.transactions.filter((item) => item.source === source).length,
+    value: allTransactionRows().filter((item) => item.source === source).length,
   }));
 
   const maxValue = Math.max(1, ...groups.map((item) => item.value));
@@ -672,10 +789,10 @@ function renderUsers() {
 function renderTransactions() {
   const search = getValue("transactionSearchInput").toLowerCase();
   const source = getValue("transactionTypeFilter");
-  const rows = state.transactions
+  const rows = allTransactionRows()
     .filter((item) => source === "all" || item.source === source)
     .filter((item) => JSON.stringify(item).toLowerCase().includes(search))
-    .sort((a, b) => Number(b.timestamp || b.createdAt || 0) - Number(a.timestamp || a.createdAt || 0))
+    .sort((a, b) => transactionTimestamp(b) - transactionTimestamp(a))
     .slice(0, 150);
 
   const list = $("transactionsList");
@@ -685,20 +802,20 @@ function renderTransactions() {
   }
 
   list.innerHTML = rows.map((item) => {
-    const time = item.timestamp || item.createdAt || item.updatedAt;
-    const amount = item.amount || item.coins || item.coinsDeducted || "";
-    const statusText = item.status || "record";
+    const time = transactionTimestamp(item);
+    const statusText = normalizeStatus(item.status);
+    const details = transactionDetails(item);
 
     return `
       <article class="record-card">
         <div class="record-top">
           <div>
-            <h3>${escapeHtml(item.type || item.status || item.source)}</h3>
+            <h3>${escapeHtml(transactionTitle(item))}</h3>
             <div class="meta">
               <span>Source: ${escapeHtml(item.source)}</span>
               <span>ID: ${escapeHtml(item.id)}</span>
-              <span>UID: ${escapeHtml(item.uid || item.userId || "")}</span>
-              <span>Amount/coins: ${escapeHtml(String(amount))}</span>
+              <span>UID: ${escapeHtml(transactionUid(item))}</span>
+              ${details.map((detail) => `<span>${escapeHtml(detail.label)}: ${escapeHtml(detail.value)}</span>`).join("")}
               <span>Time: ${formatTime(time)}</span>
             </div>
           </div>
@@ -783,6 +900,172 @@ function getValue(id) {
   return $(id).value;
 }
 
+function normalizeTransaction(item) {
+  if (!item || typeof item !== "object") return null;
+  const normalized = Object.assign({}, item);
+  normalized.source = canonicalSource(normalized.source);
+  normalized.uid = transactionUid(normalized);
+  normalized.status = normalizeStatus(normalized.status || normalized.paymentStatus || normalized.state ||
+    getFirstValue(normalized, ["data.attributes.status", "attributes.status", "payment.status"]) || "record");
+  normalized.timestamp = transactionTimestamp(normalized);
+  return normalized;
+}
+
+function transactionUid(item) {
+  return item.uid || item.userId || item.userUID || item.user_uid || item.user_id ||
+    getFirstValue(item, [
+      "metadata.uid",
+      "metadata.userId",
+      "data.attributes.metadata.uid",
+      "data.attributes.metadata.userId",
+      "attributes.metadata.uid",
+      "attributes.metadata.userId",
+      "checkout.metadata.uid",
+      "payment.metadata.uid",
+    ]) ||
+    inferUidFromPath(item.id, item) || "";
+}
+
+function transactionTimestamp(item) {
+  const value = getFirstValue(item, [
+    "paidAt",
+    "completedAt",
+    "timestamp",
+    "createdAt",
+    "updatedAt",
+    "created_at",
+    "updated_at",
+    "date",
+    "time",
+    "data.attributes.paid_at",
+    "data.attributes.created_at",
+    "data.attributes.updated_at",
+    "attributes.paid_at",
+    "attributes.created_at",
+    "attributes.updated_at",
+    "payment.createdAt",
+    "checkout.createdAt",
+  ]);
+  const number = Number(value || 0);
+
+  if (Number.isFinite(number) && number > 0) {
+    return number < 1000000000000 ? number * 1000 : number;
+  }
+
+  const parsed = Date.parse(value || "");
+  if (!Number.isNaN(parsed)) return parsed;
+
+  return 0;
+}
+
+function normalizeStatus(value) {
+  return String(value || "record").toLowerCase().replace(/\s+/g, "_");
+}
+
+function transactionTitle(item) {
+  const raw = item.type || item.action || item.category || item.event ||
+    getFirstValue(item, ["data.attributes.type", "attributes.type"]) ||
+    item.status || item.source;
+  return titleCase(raw);
+}
+
+function titleCase(value) {
+  return String(value || "record")
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/\w\S*/g, (word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase());
+}
+
+function transactionDetails(item) {
+  const details = [];
+  const amount = transactionAmountLabel(item);
+
+  if (amount) details.push({label: "Amount", value: amount});
+  const coins = getFirstValue(item, ["coins", "coinAmount", "coin_amount", "coinsAdded", "coinsDeducted"]);
+  if (coins) {
+    details.push({label: "Coins", value: coinLabel(coins)});
+  }
+  const from = getFirstValue(item, ["senderUid", "fromUid", "senderId", "fromUserId", "from", "sender.uid"]);
+  if (from) {
+    details.push({label: "From", value: from});
+  }
+  const to = getFirstValue(item, ["receiverUid", "toUid", "receiverId", "toUserId", "to", "receiver.uid"]);
+  if (to) {
+    details.push({label: "To", value: to});
+  }
+  const paymentId = getFirstValue(item, ["paymentId", "paymongoPaymentId", "data.id", "payment.id"]);
+  if (paymentId) {
+    details.push({label: "Payment ID", value: paymentId});
+  }
+  const sessionId = getFirstValue(item, ["sessionId", "checkoutSessionId", "checkout.id"]);
+  if (sessionId) {
+    details.push({label: "Session ID", value: sessionId});
+  }
+  if (item.originalSource) {
+    details.push({label: "Saved at", value: item.originalSource});
+  }
+
+  return details;
+}
+
+function transactionAmountLabel(item) {
+  const amount = getFirstValue(item, [
+    "amount",
+    "totalAmount",
+    "price",
+    "value",
+    "amountPaid",
+    "amount_paid",
+    "data.attributes.amount",
+    "attributes.amount",
+    "payment.amount",
+  ]);
+  if (amount === undefined || amount === null || amount === "") return "";
+
+  const typeText = String(item.type || item.source || "").toLowerCase();
+  const currency = String(getFirstValue(item, [
+    "currency",
+    "paymentCurrency",
+    "data.attributes.currency",
+    "attributes.currency",
+    "payment.currency",
+  ]) || "").toUpperCase();
+
+  if (currency === "PHP" || typeText.includes("paymongo") || String(item.source || "").indexOf("paymongo") >= 0) {
+    return formatPeso(payMongoAmountToPeso(amount));
+  }
+
+  if (typeText.includes("premium") || typeText.includes("coin") || item.coins || item.coinAmount || item.coinsAdded || item.coinsDeducted) {
+    return coinLabel(amount);
+  }
+
+  return String(amount);
+}
+
+function coinLabel(value) {
+  const coins = Number(value || 0);
+  if (Number.isFinite(coins)) {
+    return new Intl.NumberFormat("en-US", {maximumFractionDigits: 0}).format(coins) + " coins";
+  }
+  return String(value);
+}
+
+function getFirstValue(item, paths) {
+  for (const path of paths) {
+    const value = getPath(item, path);
+    if (value !== undefined && value !== null && value !== "") return value;
+  }
+  return "";
+}
+
+function getPath(item, path) {
+  return String(path).split(".").reduce((current, key) => {
+    if (current === undefined || current === null) return undefined;
+    return current[key];
+  }, item);
+}
+
 function imageTag(src, alt) {
   if (!src || src.indexOf("id_verifications/") === 0) {
     return `<div class="empty">${escapeHtml(alt)} path saved</div>`;
@@ -806,7 +1089,7 @@ function payMongoRevenue() {
 }
 
 function paidPayMongoPayments() {
-  return state.transactions
+  return allTransactionRows()
     .filter((item) => item.source === "paymongo_payments")
     .filter(isPaidPayMongo);
 }
