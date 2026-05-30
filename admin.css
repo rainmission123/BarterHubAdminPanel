@@ -64,11 +64,13 @@ label { color: var(--muted); display: grid; font-weight: 700; gap: 8px; margin-t
 .muted { color: var(--muted); }
 .error { color: var(--danger); font-weight: 700; margin-top: 14px; }
 .eyebrow { color: var(--primary); font-size: 12px; font-weight: 900; letter-spacing: .08em; margin: 0 0 8px; text-transform: uppercase; }
+.icon-sprite { display: none; }
 
 .login-page { align-items: center; display: flex; justify-content: center; min-height: 100vh; padding: 24px; }
 .login-card { backdrop-filter: blur(18px); background: var(--surface); border: 1px solid var(--line); border-radius: 24px; box-shadow: var(--shadow); max-width: 460px; padding: 36px; width: 100%; }
 .login-card h1 { font-size: 36px; line-height: 1.05; margin: 0 0 10px; }
-.brand-mark { align-items: center; background: linear-gradient(135deg, var(--primary), var(--accent)); border-radius: 16px; color: #fff; display: flex; font-weight: 900; height: 54px; justify-content: center; margin-bottom: 22px; width: 54px; }
+.brand-mark { align-items: center; background: linear-gradient(135deg, var(--primary), var(--accent)); border-radius: 16px; box-shadow: 0 16px 34px rgba(131, 0, 119, .24); color: #fff; display: flex; height: 58px; justify-content: center; margin-bottom: 22px; width: 58px; }
+.brand-mark svg { height: 34px; width: 34px; }
 
 .primary-btn { background: linear-gradient(135deg, var(--primary), var(--accent)); box-shadow: 0 12px 26px rgba(131, 0, 119, .22); color: #fff; }
 .secondary-btn { background: var(--surface-strong); border: 1px solid var(--line); color: var(--ink); }
@@ -81,6 +83,9 @@ label { color: var(--muted); display: grid; font-weight: 700; gap: 8px; margin-t
 .topbar { align-items: center; background: linear-gradient(135deg, rgba(131,0,119,.34), transparent), var(--nav); color: var(--nav-ink); display: flex; gap: 18px; justify-content: space-between; padding: 22px 30px; position: sticky; top: 0; z-index: 20; }
 .topbar h1 { font-size: 26px; margin: 0; }
 .topbar p { color: #cbd5e1; margin: 4px 0 0; }
+.top-title { align-items: center; display: flex; gap: 12px; }
+.app-icon, .section-icon { align-items: center; background: linear-gradient(135deg, var(--primary), var(--accent)); border: 1px solid rgba(255,255,255,.18); border-radius: 14px; box-shadow: 0 12px 26px rgba(131, 0, 119, .2); color: #fff; display: inline-flex; flex: 0 0 auto; height: 42px; justify-content: center; width: 42px; }
+.app-icon svg, .section-icon svg { height: 25px; width: 25px; }
 .top-actions { align-items: center; display: flex; gap: 12px; }
 #adminEmail { color: var(--nav-ink); font-weight: 700; }
 
@@ -92,6 +97,8 @@ label { color: var(--muted); display: grid; font-weight: 700; gap: 8px; margin-t
 .section-head { align-items: flex-start; display: flex; gap: 16px; justify-content: space-between; margin-bottom: 18px; }
 .section-head h2 { font-size: 30px; margin: 0; }
 .section-head p { color: var(--muted); margin: 6px 0 0; }
+.section-title { align-items: center; display: flex; gap: 12px; }
+.section-icon { height: 44px; width: 44px; }
 
 .cards { display: grid; gap: 14px; grid-template-columns: repeat(4, minmax(0, 1fr)); margin-bottom: 20px; }
 .stat-card, .panel, .record-card { backdrop-filter: blur(16px); background: var(--surface); border: 1px solid var(--line); border-radius: 18px; box-shadow: var(--soft-shadow); }

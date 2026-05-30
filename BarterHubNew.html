@@ -12,9 +12,20 @@
   <link rel="stylesheet" href="admin.css">
 </head>
 <body data-theme="light">
+  <svg class="icon-sprite" aria-hidden="true">
+    <symbol id="barterhubIcon" viewBox="0 0 64 64">
+      <circle cx="32" cy="32" r="28" fill="currentColor" opacity=".16"></circle>
+      <path d="M21 25h21l-5-5 3-3 10 10-10 10-3-3 5-5H21v-4z"></path>
+      <path d="M43 39H22l5 5-3 3-10-10 10-10 3 3-5 5h21v4z"></path>
+      <circle cx="32" cy="32" r="10" fill="none" stroke="currentColor" stroke-width="3"></circle>
+      <path d="M29 32h6M32 29v6" stroke="currentColor" stroke-linecap="round" stroke-width="3"></path>
+    </symbol>
+  </svg>
   <section id="loginPage" class="login-page">
     <div class="login-card">
-      <div class="brand-mark">BH</div>
+      <div class="brand-mark">
+        <svg><use href="#barterhubIcon"></use></svg>
+      </div>
       <p class="eyebrow">Secure administrator access</p>
       <h1>BarterHub Admin</h1>
       <p class="muted">Sign in with your approved Firebase admin account.</p>
@@ -31,7 +42,10 @@
     <header class="topbar">
       <div>
         <p class="eyebrow">Operations Console</p>
-        <h1>BarterHub Admin Panel</h1>
+        <div class="top-title">
+          <span class="app-icon"><svg><use href="#barterhubIcon"></use></svg></span>
+          <h1>BarterHub Admin Panel</h1>
+        </div>
         <p>ID verification, account deletion, users, and transactions.</p>
       </div>
       <div class="top-actions">
@@ -53,7 +67,13 @@
       <main class="content">
         <section id="dashboardView" class="view">
           <div class="section-head">
-            <div><h2>Dashboard</h2><p>Live summary from Firebase Realtime Database.</p></div>
+            <div>
+              <div class="section-title">
+                <span class="section-icon"><svg><use href="#barterhubIcon"></use></svg></span>
+                <h2>Dashboard</h2>
+              </div>
+              <p>Live summary from Firebase Realtime Database.</p>
+            </div>
             <button id="refreshBtn" class="secondary-btn">Refresh</button>
           </div>
           <div class="cards">
