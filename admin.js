@@ -214,6 +214,7 @@ function renderCharts() {
   renderActivityChart();
   renderStatusChart();
   renderPaymentBars();
+  renderRevenueCandleChart();
 }
 
 function renderActivityChart() {
@@ -401,6 +402,113 @@ function renderPaymentBars() {
       </div>
     `;
   }).join("");
+}
+
+function renderRevenueCandleChart() {
+  const canvas = $("revenueCandleChart");
+  if (!canvas) return;
+
+  const candles = buildRevenueCandles(7);
+  const gross = candles.reduce((sum, item) => sum + item.total, 0);
+  const maxValue = Math.max(1, ...candles.map((item) => item.high));
+  const ctx = setupCanvas(canvas);
+  const width = canvas.clientWidth;
+  const height = canvas.clientHeight || Number(canvas.getAttribute("height")) || 180;
+  const padding = Math.min(34, Math.max(24, width * 0.06));
+  const chartWidth = width - padding * 2;
+  const chartHeight = height - padding * 2;
+  const step = chartWidth / Math.max(1, candles.length - 1);
+  const candleWidth = Math.min(22, Math.max(10, step * 0.28));
+
+  ctx.clearRect(0, 0, width, height);
+  drawGrid(ctx, width, height, padding);
+
+  candles.forEach((item, index) => {
+    const x = padding + step * index;
+    const openY = candleY(item.open, maxValue, padding, chartHeight);
+    const closeY = candleY(item.close, maxValue, padding, chartHeight);
+    const highY = candleY(item.high, maxValue, padding, chartHeight);
+    const lowY = candleY(item.low, maxValue, padding, chartHeight);
+    const isUp = item.close >= item.open;
+    const color = item.total > 0 ? (isUp ? "#22c55e" : "#ef4444") : "#94a3b8";
+    const bodyTop = Math.min(openY, closeY);
+    const bodyHeight = Math.max(4, Math.abs(openY - closeY));
+
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(x, highY);
+    ctx.lineTo(x, lowY);
+    ctx.stroke();
+
+    ctx.fillStyle = item.total > 0 ? color : "transparent";
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    ctx.fillRect(x - candleWidth / 2, bodyTop, candleWidth, bodyHeight);
+    ctx.strokeRect(x - candleWidth / 2, bodyTop, candleWidth, bodyHeight);
+
+    ctx.fillStyle = getCss("--muted");
+    ctx.font = "12px system-ui";
+    ctx.textAlign = "center";
+    ctx.fillText(item.label, x, height - 6);
+  });
+
+  if (gross === 0) {
+    ctx.fillStyle = getCss("--muted");
+    ctx.font = "13px system-ui";
+    ctx.textAlign = "center";
+    ctx.fillText("No paid PayMongo records yet.", width / 2, height / 2);
+  }
+
+  const pill = $("candleTotal");
+  if (pill) pill.textContent = formatPeso(gross) + " gross";
+}
+
+function candleY(value, maxValue, padding, chartHeight) {
+  return padding + chartHeight - (value / maxValue) * chartHeight;
+}
+
+function buildRevenueCandles(days) {
+  const now = new Date();
+  const buckets = [];
+
+  for (let index = days - 1; index >= 0; index--) {
+    const date = new Date(now);
+    date.setDate(now.getDate() - index);
+    const key = date.toISOString().slice(0, 10);
+    buckets.push({
+      key,
+      label: date.toLocaleDateString(undefined, {weekday: "short"}),
+      values: [],
+      open: 0,
+      close: 0,
+      high: 0,
+      low: 0,
+      total: 0,
+    });
+  }
+
+  const byKey = Object.fromEntries(buckets.map((item) => [item.key, item]));
+
+  paidPayMongoPayments().forEach((item) => {
+    const amount = payMongoAmountToPeso(item.amount);
+    if (!amount) return;
+
+    const key = new Date(payMongoTimestamp(item)).toISOString().slice(0, 10);
+    const bucket = byKey[key] || buckets[buckets.length - 1];
+    bucket.values.push(amount);
+  });
+
+  buckets.forEach((bucket) => {
+    if (!bucket.values.length) return;
+    bucket.open = bucket.values[0];
+    bucket.close = bucket.values[bucket.values.length - 1];
+    bucket.high = Math.max(...bucket.values);
+    bucket.low = Math.min(...bucket.values);
+    bucket.total = bucket.values.reduce((sum, value) => sum + value, 0);
+  });
+
+  return buckets;
 }
 
 function setupCanvas(canvas) {
@@ -693,13 +801,31 @@ function formatTime(value) {
 }
 
 function payMongoRevenue() {
+  return paidPayMongoPayments()
+    .reduce((total, item) => total + payMongoAmountToPeso(item.amount), 0);
+}
+
+function paidPayMongoPayments() {
   return state.transactions
     .filter((item) => item.source === "paymongo_payments")
-    .filter((item) => {
-      const status = String(item.status || "").toLowerCase();
-      return ["paid", "completed", "succeeded", "success"].includes(status);
-    })
-    .reduce((total, item) => total + payMongoAmountToPeso(item.amount), 0);
+    .filter(isPaidPayMongo);
+}
+
+function isPaidPayMongo(item) {
+  const status = String(item.status || "").toLowerCase();
+  return ["paid", "completed", "succeeded", "success"].includes(status);
+}
+
+function payMongoTimestamp(item) {
+  const value = item.paidAt || item.completedAt || item.timestamp ||
+    item.createdAt || item.updatedAt || item.created_at || item.updated_at;
+  const number = Number(value || 0);
+  if (number) return number;
+
+  const parsed = Date.parse(value || "");
+  if (!Number.isNaN(parsed)) return parsed;
+
+  return Date.now();
 }
 
 function payMongoAmountToPeso(value) {

@@ -107,12 +107,14 @@ label { color: var(--muted); display: grid; font-weight: 700; gap: 8px; margin-t
 .stat-card span { color: var(--muted); font-weight: 800; }
 .dashboard-grid { align-items: start; display: grid; gap: 14px; grid-template-columns: minmax(0, 1.4fr) minmax(280px, .8fr) minmax(280px, .8fr); }
 .chart-card { backdrop-filter: blur(16px); background: var(--surface); border: 1px solid var(--line); border-radius: 18px; box-shadow: var(--soft-shadow); min-height: 0; padding: 18px; }
+.candle-chart-card { grid-column: 1 / -1; }
 .chart-head { align-items: flex-start; display: flex; gap: 12px; justify-content: space-between; margin-bottom: 12px; }
 .chart-head h3 { margin: 0; }
 .chart-head p { color: var(--muted); margin: 4px 0 0; }
 .metric-pill { background: var(--primary-soft); border: 1px solid var(--line); border-radius: 999px; color: var(--primary); font-size: 12px; font-weight: 900; padding: 7px 11px; white-space: nowrap; }
 canvas { display: block; max-width: 100%; width: 100%; }
 #activityChart { height: 180px; }
+#revenueCandleChart { height: 180px; }
 #statusChart { height: 190px; }
 .chart-legend { display: grid; gap: 8px; margin-top: 10px; }
 .legend-row, .bar-row { align-items: center; display: grid; gap: 10px; grid-template-columns: 14px minmax(0, 1fr) auto; }
@@ -185,6 +187,7 @@ canvas { display: block; max-width: 100%; width: 100%; }
   .chart-head p { font-size: 14px; line-height: 1.25; }
   .metric-pill { display: inline-block; font-size: 12px; margin-top: 10px; padding: 6px 10px; }
   #activityChart { height: 135px; }
+  #revenueCandleChart { height: 145px; }
   #statusChart { height: 150px; }
   .chart-legend { gap: 6px; }
   .legend-row, .bar-row { font-size: 15px; gap: 8px; }
@@ -203,5 +206,6 @@ canvas { display: block; max-width: 100%; width: 100%; }
   .stat-card { min-height: 96px; }
   .top-actions { grid-template-columns: 1fr; }
   #activityChart { height: 125px; }
+  #revenueCandleChart { height: 130px; }
   #statusChart { height: 140px; }
 }
