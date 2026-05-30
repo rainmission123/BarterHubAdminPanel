@@ -448,6 +448,9 @@ function renderVerification() {
     const idStatus = getIdStatus(user);
     const front = user.idFrontUrl || user.idFrontPath || "";
     const back = user.idBackUrl || user.idBackPath || "";
+    const approveDisabled = idStatus === "verified" ? "disabled" : "";
+    const rejectDisabled = idStatus === "rejected" ? "disabled" : "";
+    const pendingDisabled = idStatus === "pending" ? "disabled" : "";
 
     return `
       <article class="record-card">
@@ -464,9 +467,9 @@ function renderVerification() {
         </div>
         <div class="image-row">${imageTag(front, "Front ID")}${imageTag(back, "Back ID")}</div>
         <div class="actions">
-          <button class="success-btn" onclick="setIdStatus('${user.uid}', 'verified')">Approve</button>
-          <button class="danger-btn" onclick="setIdStatus('${user.uid}', 'rejected')">Reject</button>
-          <button class="secondary-btn" onclick="setIdStatus('${user.uid}', 'pending')">Reset Pending</button>
+          <button class="success-btn" ${approveDisabled} onclick="setIdStatus('${user.uid}', 'verified')">Approve</button>
+          <button class="danger-btn" ${rejectDisabled} onclick="setIdStatus('${user.uid}', 'rejected')">Reject</button>
+          <button class="secondary-btn" ${pendingDisabled} onclick="setIdStatus('${user.uid}', 'pending')">Reset Pending</button>
         </div>
       </article>`;
   }).join("");
@@ -596,6 +599,10 @@ function renderTransactions() {
 }
 
 async function setIdStatus(uid, status) {
+  const user = state.users[uid] || {};
+  const currentStatus = getIdStatus(user);
+  if (currentStatus === status) return;
+
   if (!window.confirm("Set ID verification to " + status + "?")) return;
   try {
     await functions.httpsCallable("adminSetIdVerification")({uid, status});

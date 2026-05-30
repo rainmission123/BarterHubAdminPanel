@@ -55,6 +55,8 @@ body {
 button, input, select, textarea { font: inherit; }
 button { border: 0; border-radius: 10px; cursor: pointer; font-weight: 700; padding: 10px 14px; transition: background .2s ease, box-shadow .2s ease, color .2s ease, transform .2s ease; }
 button:hover { transform: translateY(-1px); }
+button:disabled { cursor: not-allowed; opacity: .48; transform: none; }
+button:disabled:hover { transform: none; }
 button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { box-shadow: var(--focus); outline: none; }
 input, select, textarea { background: var(--surface-strong); border: 1px solid var(--line); border-radius: 12px; color: var(--ink); padding: 13px 14px; width: 100%; }
 textarea { min-height: 90px; resize: vertical; }
