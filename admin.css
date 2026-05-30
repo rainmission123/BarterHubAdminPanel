@@ -98,11 +98,12 @@ label { color: var(--muted); display: grid; font-weight: 700; gap: 8px; margin-t
 .section-title { align-items: center; display: flex; gap: 12px; }
 .section-icon { height: 44px; width: 44px; }
 
-.cards { display: grid; gap: 14px; grid-template-columns: repeat(4, minmax(0, 1fr)); margin-bottom: 20px; }
+.cards { display: grid; gap: 14px; grid-template-columns: repeat(5, minmax(0, 1fr)); margin-bottom: 20px; }
 .stat-card, .panel, .record-card { backdrop-filter: blur(16px); background: var(--surface); border: 1px solid var(--line); border-radius: 18px; box-shadow: var(--soft-shadow); }
 .stat-card { overflow: hidden; padding: 22px; position: relative; }
 .stat-card::after { background: linear-gradient(135deg, var(--primary), var(--accent)); border-radius: 999px; content: ""; height: 42px; opacity: .12; position: absolute; right: -12px; top: -12px; width: 42px; }
 .stat-card strong { display: block; font-size: 34px; }
+.stat-card #statRevenue { font-size: 30px; }
 .stat-card span { color: var(--muted); font-weight: 800; }
 .dashboard-grid { align-items: start; display: grid; gap: 14px; grid-template-columns: minmax(0, 1.4fr) minmax(280px, .8fr) minmax(280px, .8fr); }
 .chart-card { backdrop-filter: blur(16px); background: var(--surface); border: 1px solid var(--line); border-radius: 18px; box-shadow: var(--soft-shadow); min-height: 0; padding: 18px; }

@@ -201,11 +201,13 @@ function renderDashboard() {
   const pendingIds = users.filter((user) => getIdStatus(user) === "pending" && hasIdUpload(user)).length;
   const pendingDeletion = Object.values(state.deletionRequests).filter((request) => request.status === "pending").length;
   const payments = state.transactions.filter((item) => item.source.indexOf("paymongo") >= 0).length;
+  const revenue = payMongoRevenue();
 
   $("statUsers").textContent = users.length;
   $("statPendingIds").textContent = pendingIds;
   $("statDeletion").textContent = pendingDeletion;
   $("statPayments").textContent = payments;
+  $("statRevenue").textContent = formatPeso(revenue);
 }
 
 function renderCharts() {
@@ -688,6 +690,30 @@ function formatTime(value) {
   const number = Number(value || 0);
   if (!number) return "Unknown";
   return new Date(number).toLocaleString();
+}
+
+function payMongoRevenue() {
+  return state.transactions
+    .filter((item) => item.source === "paymongo_payments")
+    .filter((item) => {
+      const status = String(item.status || "").toLowerCase();
+      return ["paid", "completed", "succeeded", "success"].includes(status);
+    })
+    .reduce((total, item) => total + payMongoAmountToPeso(item.amount), 0);
+}
+
+function payMongoAmountToPeso(value) {
+  const amount = Number(value || 0);
+  if (!Number.isFinite(amount) || amount <= 0) return 0;
+  return amount / 100;
+}
+
+function formatPeso(value) {
+  return new Intl.NumberFormat("en-PH", {
+    style: "currency",
+    currency: "PHP",
+    maximumFractionDigits: 2,
+  }).format(value);
 }
 
 function escapeHtml(value) {
