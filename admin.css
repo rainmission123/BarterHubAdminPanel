@@ -99,15 +99,16 @@ label { color: var(--muted); display: grid; font-weight: 700; gap: 8px; margin-t
 .stat-card::after { background: linear-gradient(135deg, var(--primary), var(--accent)); border-radius: 999px; content: ""; height: 42px; opacity: .12; position: absolute; right: -12px; top: -12px; width: 42px; }
 .stat-card strong { display: block; font-size: 34px; }
 .stat-card span { color: var(--muted); font-weight: 800; }
-.dashboard-grid { display: grid; gap: 14px; grid-template-columns: minmax(0, 1.35fr) minmax(320px, .85fr); }
-.chart-card { backdrop-filter: blur(16px); background: var(--surface); border: 1px solid var(--line); border-radius: 18px; box-shadow: var(--soft-shadow); padding: 22px; }
-.wide-chart { grid-row: span 2; }
-.chart-head { align-items: flex-start; display: flex; gap: 12px; justify-content: space-between; margin-bottom: 16px; }
+.dashboard-grid { align-items: start; display: grid; gap: 14px; grid-template-columns: minmax(0, 1.4fr) minmax(280px, .8fr) minmax(280px, .8fr); }
+.chart-card { backdrop-filter: blur(16px); background: var(--surface); border: 1px solid var(--line); border-radius: 18px; box-shadow: var(--soft-shadow); min-height: 0; padding: 18px; }
+.chart-head { align-items: flex-start; display: flex; gap: 12px; justify-content: space-between; margin-bottom: 12px; }
 .chart-head h3 { margin: 0; }
 .chart-head p { color: var(--muted); margin: 4px 0 0; }
 .metric-pill { background: var(--primary-soft); border: 1px solid var(--line); border-radius: 999px; color: var(--primary); font-size: 12px; font-weight: 900; padding: 7px 11px; white-space: nowrap; }
 canvas { display: block; max-width: 100%; width: 100%; }
-.chart-legend { display: grid; gap: 8px; margin-top: 14px; }
+#activityChart { height: 180px; }
+#statusChart { height: 190px; }
+.chart-legend { display: grid; gap: 8px; margin-top: 10px; }
 .legend-row, .bar-row { align-items: center; display: grid; gap: 10px; grid-template-columns: 14px minmax(0, 1fr) auto; }
 .legend-dot { border-radius: 999px; height: 12px; width: 12px; }
 .bar-list { display: grid; gap: 14px; }
@@ -140,7 +141,6 @@ canvas { display: block; max-width: 100%; width: 100%; }
   .nav-btn { min-width: max-content; }
   .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .dashboard-grid { grid-template-columns: 1fr; }
-  .wide-chart { grid-row: auto; }
   .filters { grid-template-columns: 1fr; }
 }
 

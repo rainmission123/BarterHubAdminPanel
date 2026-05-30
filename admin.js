@@ -221,7 +221,7 @@ function renderActivityChart() {
   const buckets = buildActivityBuckets(7);
   const ctx = setupCanvas(canvas);
   const width = canvas.clientWidth;
-  const height = Number(canvas.getAttribute("height")) || 180;
+  const height = canvas.clientHeight || Number(canvas.getAttribute("height")) || 180;
   const maxValue = Math.max(1, ...buckets.map((item) => item.value));
   const padding = 28;
   const chartWidth = width - padding * 2;
@@ -330,7 +330,7 @@ function renderStatusChart() {
 
   const ctx = setupCanvas(canvas);
   const width = canvas.clientWidth;
-  const height = Number(canvas.getAttribute("height")) || 220;
+  const height = canvas.clientHeight || Number(canvas.getAttribute("height")) || 220;
   const total = Math.max(1, values.reduce((sum, item) => sum + item.value, 0));
   const centerX = width / 2;
   const centerY = height / 2;
@@ -404,7 +404,7 @@ function renderPaymentBars() {
 function setupCanvas(canvas) {
   const ratio = window.devicePixelRatio || 1;
   const width = canvas.clientWidth || 400;
-  const height = Number(canvas.getAttribute("height")) || 180;
+  const height = canvas.clientHeight || Number(canvas.getAttribute("height")) || 180;
   canvas.width = width * ratio;
   canvas.height = height * ratio;
   const ctx = canvas.getContext("2d");
