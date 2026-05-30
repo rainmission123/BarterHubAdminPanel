@@ -155,8 +155,17 @@ function listenTransactions() {
     "coin_transfers",
     "coinTransfers",
     "coin_transfer_transactions",
+    "coin_history",
+    "coinHistory",
+    "coin_purchase_history",
+    "coinPurchaseHistory",
     "wallet_transactions",
     "walletTransactions",
+    "wallet_history",
+    "walletHistory",
+    "wallets",
+    "user_wallets",
+    "userWallets",
     "premium_transactions",
     "premiumTransactions",
     "paymongo_payments",
@@ -168,6 +177,12 @@ function listenTransactions() {
     "transactions",
     "transaction_history",
     "transactionHistory",
+    "payments",
+    "payment_history",
+    "paymentHistory",
+    "orders",
+    "checkout_sessions",
+    "checkoutSessions",
     "user_transactions",
     "userTransactions",
   ].forEach((source) => {
@@ -229,7 +244,7 @@ function canonicalSource(source) {
   if (normalized.includes("premium")) return "premium_transactions";
   if (normalized.includes("checkout")) return "paymongo_checkout_sessions";
   if (normalized.includes("processedpaymongo")) return "processed_paymongo_payments";
-  if (normalized.includes("paymongo")) return "paymongo_payments";
+  if (normalized.includes("paymongo") || normalized === "payments" || normalized.includes("payment")) return "paymongo_payments";
   if (normalized.includes("wallet") || normalized.includes("coin") || normalized.includes("transfer")) return "coin_transactions";
   if (normalized.includes("history")) return "transactions";
   return value;
@@ -251,6 +266,7 @@ function userRows() {
 function allTransactionRows() {
   const rows = state.transactions
     .concat(userTransactionRows())
+    .concat(payMongoCoinRows())
     .map(normalizeTransaction)
     .filter(Boolean);
   const seen = new Set();
@@ -272,6 +288,18 @@ function allTransactionRows() {
     seen.add(key);
     return true;
   });
+}
+
+function payMongoCoinRows() {
+  return state.transactions
+    .filter((item) => canonicalSource(item.source) === "paymongo_payments")
+    .filter((item) => item.coins || item.coinAmount || item.coin_amount || item.coinsAdded)
+    .map((item) => Object.assign({}, item, {
+      id: "coin_purchase/" + item.id,
+      source: "coin_transactions",
+      originalSource: item.rawSource || item.source,
+      type: item.type || "coin_purchase",
+    }));
 }
 
 function userTransactionRows() {
@@ -791,7 +819,7 @@ function renderTransactions() {
   const source = getValue("transactionTypeFilter");
   const rows = allTransactionRows()
     .filter((item) => source === "all" || item.source === source)
-    .filter((item) => JSON.stringify(item).toLowerCase().includes(search))
+    .filter((item) => transactionSearchText(item).includes(search))
     .sort((a, b) => transactionTimestamp(b) - transactionTimestamp(a))
     .slice(0, 150);
 
@@ -814,7 +842,7 @@ function renderTransactions() {
             <div class="meta">
               <span>Source: ${escapeHtml(item.source)}</span>
               <span>ID: ${escapeHtml(item.id)}</span>
-              <span>UID: ${escapeHtml(transactionUid(item))}</span>
+              <span>User: ${escapeHtml(userLabel(transactionUid(item)))}</span>
               ${details.map((detail) => `<span>${escapeHtml(detail.label)}: ${escapeHtml(detail.value)}</span>`).join("")}
               <span>Time: ${formatTime(time)}</span>
             </div>
@@ -898,6 +926,24 @@ function searchRequest(request, user, search) {
 
 function getValue(id) {
   return $(id).value;
+}
+
+function transactionSearchText(item) {
+  return [
+    JSON.stringify(item),
+    userLabel(transactionUid(item)),
+    userLabel(getFirstValue(item, ["senderUid", "fromUid", "senderId", "fromUserId", "from", "sender.uid"])),
+    userLabel(getFirstValue(item, ["receiverUid", "toUid", "receiverId", "toUserId", "to", "receiver.uid"])),
+  ].join(" ").toLowerCase();
+}
+
+function userLabel(uid) {
+  if (!uid) return "Unknown user";
+  const user = state.users[uid] || {};
+  const name = displayName(user);
+  if (name && name !== "No name") return name + " (" + uid + ")";
+  if (user.email) return user.email + " (" + uid + ")";
+  return uid;
 }
 
 function normalizeTransaction(item) {
@@ -988,11 +1034,11 @@ function transactionDetails(item) {
   }
   const from = getFirstValue(item, ["senderUid", "fromUid", "senderId", "fromUserId", "from", "sender.uid"]);
   if (from) {
-    details.push({label: "From", value: from});
+    details.push({label: "From", value: userLabel(from)});
   }
   const to = getFirstValue(item, ["receiverUid", "toUid", "receiverId", "toUserId", "to", "receiver.uid"]);
   if (to) {
-    details.push({label: "To", value: to});
+    details.push({label: "To", value: userLabel(to)});
   }
   const paymentId = getFirstValue(item, ["paymentId", "paymongoPaymentId", "data.id", "payment.id"]);
   if (paymentId) {
