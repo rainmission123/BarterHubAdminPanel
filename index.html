@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="BarterHub admin dashboard">
+  <title>BarterHub Admin Panel</title>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-functions-compat.js"></script>
+  <link rel="stylesheet" href="admin.css">
+</head>
+<body data-theme="light">
+  <section id="loginPage" class="login-page">
+    <div class="login-card">
+      <div class="brand-mark">BH</div>
+      <p class="eyebrow">Secure administrator access</p>
+      <h1>BarterHub Admin</h1>
+      <p class="muted">Sign in with your approved Firebase admin account.</p>
+      <form id="loginForm">
+        <label>Email<input id="loginEmail" type="email" autocomplete="email" required></label>
+        <label>Password<input id="loginPassword" type="password" autocomplete="current-password" required></label>
+        <button class="primary-btn full" type="submit">Sign In</button>
+        <p id="loginError" class="error"></p>
+      </form>
+    </div>
+  </section>
+
+  <section id="appShell" class="app-shell hidden">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">Operations Console</p>
+        <h1>BarterHub Admin Panel</h1>
+        <p>ID verification, account deletion, users, and transactions.</p>
+      </div>
+      <div class="top-actions">
+        <span id="adminEmail"></span>
+        <button id="themeToggleBtn" class="ghost-btn" type="button">Dark mode</button>
+        <button id="signOutBtn" class="ghost-btn">Sign Out</button>
+      </div>
+    </header>
+
+    <div class="layout">
+      <nav class="sidebar" aria-label="Admin sections">
+        <button class="nav-btn active" data-view="dashboardView">Dashboard</button>
+        <button class="nav-btn" data-view="verificationView">ID Verification</button>
+        <button class="nav-btn" data-view="deletionView">Deletion Requests</button>
+        <button class="nav-btn" data-view="usersView">Users</button>
+        <button class="nav-btn" data-view="transactionsView">Transactions</button>
+      </nav>
+
+      <main class="content">
+        <section id="dashboardView" class="view">
+          <div class="section-head">
+            <div><h2>Dashboard</h2><p>Live summary from Firebase Realtime Database.</p></div>
+            <button id="refreshBtn" class="secondary-btn">Refresh</button>
+          </div>
+          <div class="cards">
+            <div class="stat-card"><strong id="statUsers">0</strong><span>Total users</span></div>
+            <div class="stat-card"><strong id="statPendingIds">0</strong><span>Pending IDs</span></div>
+            <div class="stat-card"><strong id="statDeletion">0</strong><span>Deletion requests</span></div>
+            <div class="stat-card"><strong id="statPayments">0</strong><span>Payments</span></div>
+          </div>
+        </section>
+
+        <section id="verificationView" class="view hidden">
+          <div class="section-head"><div><h2>ID Verification</h2><p>Review users who uploaded ID documents.</p></div></div>
+          <div class="panel filters"><input id="idSearchInput" type="search" placeholder="Search by name, email, phone, or UID"><select id="idStatusFilter"><option value="all">All statuses</option><option value="pending">Pending</option><option value="verified">Verified</option><option value="rejected">Rejected</option></select></div>
+          <div id="verificationList" class="list"></div>
+        </section>
+
+        <section id="deletionView" class="view hidden">
+          <div class="section-head"><div><h2>Account Deletion Requests</h2><p>Review pending account deletion requests.</p></div></div>
+          <div class="panel filters"><input id="deletionSearchInput" type="search" placeholder="Search by UID, email, or name"><select id="deletionStatusFilter"><option value="pending">Pending only</option><option value="all">All statuses</option><option value="completed">Completed</option><option value="rejected">Rejected</option></select></div>
+          <div id="deletionList" class="list"></div>
+        </section>
+
+        <section id="usersView" class="view hidden">
+          <div class="section-head"><div><h2>Users</h2><p>Search user wallet, premium, and account status.</p></div></div>
+          <div class="panel filters"><input id="userSearchInput" type="search" placeholder="Search by name, email, username, or UID"><select id="userStatusFilter"><option value="all">All users</option><option value="premium">Premium</option><option value="pending_deletion">Pending deletion</option><option value="deleted">Deleted</option></select></div>
+          <div id="usersList" class="list"></div>
+        </section>
+
+        <section id="transactionsView" class="view hidden">
+          <div class="section-head"><div><h2>Transactions</h2><p>Read-only view of coin, premium, and PayMongo records.</p></div></div>
+          <div class="panel filters"><input id="transactionSearchInput" type="search" placeholder="Search by UID, payment ID, status, or type"><select id="transactionTypeFilter"><option value="all">All transaction sources</option><option value="coin_transactions">Coin transactions</option><option value="premium_transactions">Premium transactions</option><option value="paymongo_payments">PayMongo payments</option><option value="paymongo_checkout_sessions">Checkout sessions</option></select></div>
+          <div id="transactionsList" class="list"></div>
+        </section>
+      </main>
+    </div>
+  </section>
+
+  <div id="reasonModal" class="modal">
+    <div class="modal-card">
+      <h3 id="reasonTitle">Reason</h3>
+      <p id="reasonText" class="muted"></p>
+      <label>Reason or note<textarea id="reasonInput"></textarea></label>
+      <div class="actions"><button id="reasonConfirmBtn" class="danger-btn">Confirm</button><button id="reasonCancelBtn" class="secondary-btn">Cancel</button></div>
+    </div>
+  </div>
+
+  <script src="admin.js"></script>
+</body>
+</html>
