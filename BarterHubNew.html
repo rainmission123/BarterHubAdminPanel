@@ -62,6 +62,39 @@
             <div class="stat-card"><strong id="statDeletion">0</strong><span>Deletion requests</span></div>
             <div class="stat-card"><strong id="statPayments">0</strong><span>Payments</span></div>
           </div>
+          <div class="dashboard-grid">
+            <section class="chart-card wide-chart">
+              <div class="chart-head">
+                <div>
+                  <h3>Operations Monitor</h3>
+                  <p>Recent activity across requests and payments.</p>
+                </div>
+                <span id="activityTotal" class="metric-pill">0 events</span>
+              </div>
+              <canvas id="activityChart" height="180"></canvas>
+            </section>
+
+            <section class="chart-card">
+              <div class="chart-head">
+                <div>
+                  <h3>User Status</h3>
+                  <p>Verification and deletion health.</p>
+                </div>
+              </div>
+              <canvas id="statusChart" height="220"></canvas>
+              <div id="statusLegend" class="chart-legend"></div>
+            </section>
+
+            <section class="chart-card">
+              <div class="chart-head">
+                <div>
+                  <h3>Payments</h3>
+                  <p>PayMongo and premium records.</p>
+                </div>
+              </div>
+              <div id="paymentBars" class="bar-list"></div>
+            </section>
+          </div>
         </section>
 
         <section id="verificationView" class="view hidden">
