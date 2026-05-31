@@ -986,6 +986,9 @@ function normalizeTransaction(item) {
   if (!item || typeof item !== "object") return null;
   const normalized = Object.assign({}, item);
   normalized.source = canonicalSource(normalized.source);
+  if (normalized.source === "transactions" && isWalletTransfer(normalized)) {
+    normalized.source = "user_transactions";
+  }
   normalized.uid = transactionUid(normalized);
   normalized.status = normalizeStatus(normalized.status || normalized.paymentStatus || normalized.state ||
     getFirstValue(normalized, ["data.attributes.status", "attributes.status", "payment.status"]) || "record");
