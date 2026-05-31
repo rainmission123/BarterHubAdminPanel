@@ -56,13 +56,25 @@ document.querySelectorAll(".nav-btn").forEach((button) => {
 });
 
 $("refreshBtn").addEventListener("click", renderAll);
-[
-  "idSearchInput", "idStatusFilter", "deletionSearchInput",
-  "deletionStatusFilter", "userSearchInput", "userStatusFilter",
-  "transactionSearchInput", "transactionTypeFilter",
-].forEach((id) => {
-  $(id).addEventListener("input", renderAll);
-  $(id).addEventListener("change", renderAll);
+const filterPageKeys = {
+  idSearchInput: "verification",
+  idStatusFilter: "verification",
+  deletionSearchInput: "deletion",
+  deletionStatusFilter: "deletion",
+  userSearchInput: "users",
+  userStatusFilter: "users",
+  transactionSearchInput: "transactions",
+  transactionTypeFilter: "transactions",
+};
+
+Object.keys(filterPageKeys).forEach((id) => {
+  const rerenderFromFirstPage = () => {
+    window.pageState[filterPageKeys[id]] = 1;
+    renderAll();
+  };
+
+  $(id).addEventListener("input", rerenderFromFirstPage);
+  $(id).addEventListener("change", rerenderFromFirstPage);
 });
 
 window.addEventListener("resize", () => {

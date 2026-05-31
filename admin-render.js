@@ -1,4 +1,5 @@
 const PAGE_SIZE = 10;
+const MAX_TRANSACTION_ROWS = 150;
 
 window.pageState = window.pageState || {
   verification: 1,
@@ -81,18 +82,12 @@ function renderVerification() {
     return searchUser(user, search);
   });
 
-  const totalPages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
-
-    if (window.pageState.verification > totalPages) {
-      window.pageState.verification = totalPages;
-    }
-
-    const start = (window.pageState.verification - 1) * PAGE_SIZE;
-    const pagedRows = rows.slice(start, start + PAGE_SIZE);
+  const {pagedRows, totalPages} = paginateRows(rows, "verification");
 
   const list = $("verificationList");
   if (pagedRows.length === 0) {
     list.innerHTML = empty("No ID verification records found.");
+    renderPagination("verificationPagination", "verification", totalPages);
     return;
   }
 
@@ -144,13 +139,15 @@ function renderDeletionRequests() {
     })
     .sort((a, b) => Number(b.requestedAt || 0) - Number(a.requestedAt || 0));
 
+  const {pagedRows, totalPages} = paginateRows(rows, "deletion");
   const list = $("deletionList");
-  if (rows.length === 0) {
+  if (pagedRows.length === 0) {
     list.innerHTML = empty("No account deletion requests found.");
+    renderPagination("deletionPagination", "deletion", totalPages);
     return;
   }
 
-  list.innerHTML = rows.map((request) => {
+  list.innerHTML = pagedRows.map((request) => {
     const user = state.users[request.uid] || {};
     const requestStatus = request.status || "pending";
 
@@ -174,6 +171,7 @@ function renderDeletionRequests() {
         </div>
       </article>`;
   }).join("");
+  renderPagination("deletionPagination", "deletion", totalPages);
 }
 
 function renderUsers() {
@@ -186,13 +184,15 @@ function renderUsers() {
     return user.accountStatus === status;
   });
 
+  const {pagedRows, totalPages} = paginateRows(rows, "users");
   const list = $("usersList");
-  if (rows.length === 0) {
+  if (pagedRows.length === 0) {
     list.innerHTML = empty("No users found.");
+    renderPagination("usersPagination", "users", totalPages);
     return;
   }
 
-  list.innerHTML = rows.map((user) => {
+  list.innerHTML = pagedRows.map((user) => {
     const coins = user.wallet && user.wallet.coins !== undefined ? user.wallet.coins : 0;
     const premiumExpiry = user.premiumExpiry ? formatTime(user.premiumExpiry) : "Not premium";
     const statusText = user.accountStatus || getIdStatus(user);
@@ -214,6 +214,7 @@ function renderUsers() {
         </div>
       </article>`;
   }).join("");
+  renderPagination("usersPagination", "users", totalPages);
 }
 
 function renderTransactions() {
@@ -223,16 +224,18 @@ function renderTransactions() {
     .filter((item) => source === "all" || item.source === source)
     .filter((item) => transactionSearchText(item).includes(search))
     .sort((a, b) => transactionTimestamp(b) - transactionTimestamp(a))
-    .slice(0, 150);
+    .slice(0, MAX_TRANSACTION_ROWS);
 
+  const {pagedRows, totalPages} = paginateRows(rows, "transactions");
   const list = $("transactionsList");
   renderTransactionDiagnostics(source);
-  if (rows.length === 0) {
+  if (pagedRows.length === 0) {
     list.innerHTML = empty("No transaction records found.");
+    renderPagination("transactionsPagination", "transactions", totalPages);
     return;
   }
 
-  list.innerHTML = rows.map((item) => {
+  list.innerHTML = pagedRows.map((item) => {
     const time = transactionTimestamp(item);
     const statusText = normalizeStatus(item.status);
     const details = transactionDetails(item);
@@ -254,6 +257,7 @@ function renderTransactions() {
         </div>
       </article>`;
   }).join("");
+  renderPagination("transactionsPagination", "transactions", totalPages);
 }
 
 function renderTransactionDiagnostics(selectedSource) {
@@ -287,6 +291,11 @@ function renderPagination(containerId, key, totalPages) {
   const container = $(containerId);
   if (!container) return;
 
+  if (totalPages <= 1) {
+    container.innerHTML = "";
+    return;
+  }
+
   const current = window.pageState[key] || 1;
 
   container.innerHTML = `
@@ -309,5 +318,21 @@ function renderPagination(containerId, key, totalPages) {
 function changePage(key, direction) {
   window.pageState[key] = Math.max(1, (window.pageState[key] || 1) + direction);
   renderAll();
+}
+
+function paginateRows(rows, key) {
+  const totalPages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
+
+  if (window.pageState[key] > totalPages) {
+    window.pageState[key] = totalPages;
+  }
+
+  const current = window.pageState[key] || 1;
+  const start = (current - 1) * PAGE_SIZE;
+
+  return {
+    pagedRows: rows.slice(start, start + PAGE_SIZE),
+    totalPages,
+  };
 }
 
