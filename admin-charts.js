@@ -1,3 +1,5 @@
+window.selectedRange = 7;
+
 function renderCharts() {
   renderActivityChart();
   renderStatusChart();
@@ -197,7 +199,7 @@ function renderRevenueCandleChart() {
   const canvas = $("revenueCandleChart");
   if (!canvas) return;
 
-  const candles = buildRevenueCandles(7);
+  const candles = buildRevenueCandles(window.selectedRange || 7);
   const gross = candles.reduce((sum, item) => sum + item.total, 0);
   const maxValue = Math.max(1, ...candles.map((item) => item.high));
   const ctx = setupCanvas(canvas);

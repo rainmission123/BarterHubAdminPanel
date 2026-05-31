@@ -309,40 +309,40 @@ canvas { display: block; max-width: 100%; width: 100%; }
   #statusChart { height: 140px; }
 }
 
-.topbar {
+[data-theme="dark"] .topbar {
   background:
     radial-gradient(circle at 70% 0%, rgba(34,211,238,.18), transparent 28%),
     linear-gradient(90deg, #020817, #03111f 55%, #020817);
 }
 
-.content {
+[data-theme="dark"] .content {
   background:
     radial-gradient(circle at 65% 0%, rgba(34,211,238,.10), transparent 26%),
     linear-gradient(180deg, #03111f, #020817);
 }
 
-.sidebar {
+[data-theme="dark"] .sidebar {
   background:
     linear-gradient(180deg, #03111f, #020817);
 }
 
-.stat-card {
+[data-theme="dark"] .stat-card {
   display: flex;
   flex-direction: column;
   justify-content: center;
   min-height: 98px;
 }
 
-.stat-card strong {
+[data-theme="dark"] .stat-card strong {
   color: #ffffff;
 }
 
-.stat-card span {
+[data-theme="dark"] .stat-card span {
   color: #a6b6c8;
 }
 
-.chart-card:hover,
-.stat-card:hover {
+[data-theme="dark"] .chart-card:hover,
+[data-theme="dark"] .stat-card:hover {
   border-color: rgba(34,211,238,.35);
   box-shadow:
     0 0 0 1px rgba(34,211,238,.12),
@@ -350,15 +350,44 @@ canvas { display: block; max-width: 100%; width: 100%; }
     0 0 30px rgba(34,211,238,.08);
 }
 
-.secondary-btn,
-.ghost-btn {
+[data-theme="dark"] .secondary-btn,
+[data-theme="dark"] .ghost-btn {
   border: 1px solid rgba(34,211,238,.22);
   background: rgba(8,18,35,.75);
   color: #ffffff;
 }
 
-.secondary-btn:hover,
-.ghost-btn:hover {
+[data-theme="dark"] .secondary-btn:hover,
+[data-theme="dark"] .ghost-btn:hover {
   background: rgba(34,211,238,.12);
   color: #22d3ee;
+}
+
+.range-buttons {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.range-btn {
+  background: rgba(0, 212, 255, 0.08);
+  border: 1px solid rgba(0, 212, 255, 0.25);
+  color: #38dfff;
+  padding: 6px 12px;
+  border-radius: 999px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  transition: all 0.25s ease;
+}
+
+.range-btn:hover {
+  background: rgba(0, 212, 255, 0.18);
+  box-shadow: 0 0 12px rgba(0, 212, 255, 0.35);
+}
+
+.range-btn.active {
+  background: #00d4ff;
+  color: #00131a;
+  box-shadow: 0 0 15px rgba(0, 212, 255, 0.6);
 }
