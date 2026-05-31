@@ -50,7 +50,7 @@ function renderActivityChart() {
   ctx.clearRect(0, 0, width, height);
   drawGrid(ctx, width, height, padding);
 
-  ctx.strokeStyle = "#22d3ee";
+  ctx.strokeStyle = getCss("--chart-primary");
   ctx.lineWidth = 3;
   ctx.beginPath();
 
@@ -67,7 +67,7 @@ function renderActivityChart() {
     const x = padding + (chartWidth / Math.max(1, buckets.length - 1)) * index;
     const y = padding + chartHeight - (item.value / maxValue) * chartHeight;
     ctx.fillStyle = getCss("--surface-strong");
-    ctx.strokeStyle = "#67e8f9";
+    ctx.strokeStyle = getCss("--chart-primary-soft");
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.arc(x, y, 5, 0, Math.PI * 2);
@@ -129,7 +129,7 @@ function renderStatusChart() {
     {
       label: "Verified",
       value: users.filter((user) => getIdStatus(user) === "verified").length,
-      color: "#22d3ee",
+      color: getCss("--chart-primary"),
     },
     {
       label: "Pending",
@@ -248,7 +248,7 @@ function renderRevenueCandleChart() {
     const highY = candleY(item.high, maxValue, padding, chartHeight);
     const lowY = candleY(item.low, maxValue, padding, chartHeight);
     const isUp = item.close >= item.open;
-    const color = item.total > 0 ? "#22d3ee" : "#334155";
+    const color = item.total > 0 ? getCss("--chart-primary") : getCss("--chart-empty");
     const bodyTop = Math.min(openY, closeY);
     const bodyHeight = Math.max(4, Math.abs(openY - closeY));
 
