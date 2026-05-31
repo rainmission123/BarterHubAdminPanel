@@ -1,3 +1,5 @@
+/* eslint-disable require-jsdoc, max-len, indent, comma-dangle */
+
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 
