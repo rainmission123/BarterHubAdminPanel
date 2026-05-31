@@ -10,17 +10,36 @@ function renderAll() {
 
 function renderDashboard() {
   const users = userRows();
-  const pendingIds = users.filter((user) => getIdStatus(user) === "pending" && hasIdUpload(user)).length;
-  const pendingDeletion = Object.values(state.deletionRequests).filter((request) => request.status === "pending").length;
-  const payments = allTransactionRows().filter((item) => item.source.indexOf("paymongo") >= 0).length;
-  const revenue = payMongoRevenue();
+
+  const pendingIds = users.filter((user) =>
+    getIdStatus(user) === "pending" && hasIdUpload(user)
+  ).length;
+
+  const pendingDeletion = Object.values(state.deletionRequests).filter(
+    (request) => request.status === "pending"
+  ).length;
+
   const stats = state.adminStats || {};
 
-  $("statUsers").textContent = stats.totalUsers !== undefined ? stats.totalUsers : users.length;
-  $("statPendingIds").textContent = stats.pendingIdVerifications !== undefined ? stats.pendingIdVerifications : pendingIds;
-  $("statDeletion").textContent = stats.pendingDeletionRequests !== undefined ? stats.pendingDeletionRequests : pendingDeletion;
-  $("statPayments").textContent = stats.totalPayments !== undefined ? stats.totalPayments : payments;
-  $("statRevenue").textContent = formatPeso(stats.totalRevenue !== undefined ? stats.totalRevenue : revenue);
+  const paidPayments = paidPayMongoPayments();
+  const payments = paidPayments.length;
+  const revenue = payMongoRevenue();
+
+  $("statUsers").textContent =
+    stats.totalUsers !== undefined ? stats.totalUsers : users.length;
+
+  $("statPendingIds").textContent =
+    stats.pendingIdVerifications !== undefined
+      ? stats.pendingIdVerifications
+      : pendingIds;
+
+  $("statDeletion").textContent =
+    stats.pendingDeletionRequests !== undefined
+      ? stats.pendingDeletionRequests
+      : pendingDeletion;
+
+  $("statPayments").textContent = payments;
+  $("statRevenue").textContent = formatPeso(revenue);
 }
 
 
