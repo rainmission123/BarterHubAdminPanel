@@ -21,7 +21,7 @@ function renderActivityChart() {
   ctx.clearRect(0, 0, width, height);
   drawGrid(ctx, width, height, padding);
 
-  ctx.strokeStyle = getCss("--primary");
+  ctx.strokeStyle = "#22d3ee";
   ctx.lineWidth = 3;
   ctx.beginPath();
 
@@ -38,7 +38,7 @@ function renderActivityChart() {
     const x = padding + (chartWidth / Math.max(1, buckets.length - 1)) * index;
     const y = padding + chartHeight - (item.value / maxValue) * chartHeight;
     ctx.fillStyle = getCss("--surface-strong");
-    ctx.strokeStyle = getCss("--accent");
+    ctx.strokeStyle = "#67e8f9";
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.arc(x, y, 5, 0, Math.PI * 2);
@@ -100,22 +100,22 @@ function renderStatusChart() {
     {
       label: "Verified",
       value: users.filter((user) => getIdStatus(user) === "verified").length,
-      color: "#22c55e",
+      color: "#22d3ee",
     },
     {
       label: "Pending",
       value: users.filter((user) => getIdStatus(user) === "pending").length,
-      color: "#f59e0b",
+      color: "#facc15",
     },
     {
       label: "Rejected",
       value: users.filter((user) => getIdStatus(user) === "rejected").length,
-      color: "#ef4444",
+      color: "#fb7185",
     },
     {
       label: "Deleted",
       value: users.filter((user) => user.accountStatus === "deleted").length,
-      color: "#94a3b8",
+      color: "#64748b",
     },
   ];
 
@@ -219,7 +219,7 @@ function renderRevenueCandleChart() {
     const highY = candleY(item.high, maxValue, padding, chartHeight);
     const lowY = candleY(item.low, maxValue, padding, chartHeight);
     const isUp = item.close >= item.open;
-    const color = item.total > 0 ? (isUp ? "#22c55e" : "#ef4444") : "#94a3b8";
+    const color = item.total > 0 ? "#22d3ee" : "#334155";
     const bodyTop = Math.min(openY, closeY);
     const bodyHeight = Math.max(4, Math.abs(openY - closeY));
 
