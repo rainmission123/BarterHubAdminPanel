@@ -122,18 +122,21 @@
           <div class="section-head"><div><h2>ID Verification</h2><p>Review users who uploaded ID documents.</p></div></div>
           <div class="panel filters"><input id="idSearchInput" type="search" placeholder="Search by name, email, phone, or UID"><select id="idStatusFilter"><option value="all">All statuses</option><option value="pending">Pending</option><option value="verified">Verified</option><option value="rejected">Rejected</option></select></div>
           <div id="verificationList" class="list"></div>
+          <div id="verificationPagination" class="pagination"></div>
         </section>
 
         <section id="deletionView" class="view hidden">
           <div class="section-head"><div><h2>Account Deletion Requests</h2><p>Review pending account deletion requests.</p></div></div>
           <div class="panel filters"><input id="deletionSearchInput" type="search" placeholder="Search by UID, email, or name"><select id="deletionStatusFilter"><option value="pending">Pending only</option><option value="all">All statuses</option><option value="completed">Completed</option><option value="rejected">Rejected</option></select></div>
           <div id="deletionList" class="list"></div>
+          <div id="deletionPagination" class="pagination"></div>
         </section>
 
         <section id="usersView" class="view hidden">
           <div class="section-head"><div><h2>Users</h2><p>Search user wallet, premium, and account status.</p></div></div>
           <div class="panel filters"><input id="userSearchInput" type="search" placeholder="Search by name, email, username, or UID"><select id="userStatusFilter"><option value="all">All users</option><option value="premium">Premium</option><option value="pending_deletion">Pending deletion</option><option value="deleted">Deleted</option></select></div>
           <div id="usersList" class="list"></div>
+          <div id="usersPagination" class="pagination"></div>
         </section>
 
         <section id="transactionsView" class="view hidden">
@@ -141,6 +144,7 @@
           <div class="panel filters"><input id="transactionSearchInput" type="search" placeholder="Search by username, UID, payment ID, status, or type"><select id="transactionTypeFilter"><option value="all">All transaction sources</option><option value="coin_transactions">Coin transactions</option><option value="premium_transactions">Premium transactions</option><option value="user_transactions">User wallet transactions</option><option value="paymongo_payments">PayMongo payments</option><option value="paymongo_checkout_sessions">Checkout sessions</option><option value="processed_paymongo_payments">Processed PayMongo</option></select></div>
           <div id="transactionsDiagnostics" class="transaction-diagnostics hidden"></div>
           <div id="transactionsList" class="list"></div>
+          <div id="transactionsPagination" class="pagination"></div>
         </section>
       </main>
     </div>
