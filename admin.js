@@ -266,6 +266,7 @@ function userRows() {
 function allTransactionRows() {
   const rows = state.transactions
     .concat(userTransactionRows())
+    .concat(walletTransferRows())
     .concat(payMongoCoinRows())
     .map(normalizeTransaction)
     .filter(Boolean);
@@ -290,6 +291,25 @@ function allTransactionRows() {
   });
 }
 
+function walletTransferRows() {
+  return state.transactions
+    .filter((item) => canonicalSource(item.source) === "coin_transactions")
+    .filter(isWalletTransfer)
+    .map((item) => Object.assign({}, item, {
+      id: "wallet_transfer/" + item.id,
+      source: "user_transactions",
+      originalSource: item.rawSource || item.source,
+    }));
+}
+
+function isWalletTransfer(item) {
+  const type = String(item.type || item.action || item.category || item.event || item.id || "").toLowerCase();
+  return type.includes("send") || type.includes("sent") || type.includes("receive") ||
+    type.includes("received") || type.includes("transfer") ||
+    Boolean(item.senderUid || item.fromUid || item.senderId || item.fromUserId ||
+      item.receiverUid || item.toUid || item.receiverId || item.toUserId);
+}
+
 function payMongoCoinRows() {
   return state.transactions
     .filter((item) => canonicalSource(item.source) === "paymongo_payments")
@@ -298,6 +318,7 @@ function payMongoCoinRows() {
       id: "coin_purchase/" + item.id,
       source: "coin_transactions",
       originalSource: item.rawSource || item.source,
+      currency: item.currency || "PHP",
       type: item.type || "coin_purchase",
     }));
 }
@@ -1001,11 +1022,73 @@ function transactionTimestamp(item) {
   const parsed = Date.parse(value || "");
   if (!Number.isNaN(parsed)) return parsed;
 
-  return 0;
+  return relatedTransactionTimestamp(item);
 }
 
 function normalizeStatus(value) {
   return String(value || "record").toLowerCase().replace(/\s+/g, "_");
+}
+
+function relatedTransactionTimestamp(item) {
+  const uid = transactionUid(item);
+  const amount = getFirstValue(item, ["amount", "data.attributes.amount", "attributes.amount", "payment.amount"]);
+  const coins = getFirstValue(item, ["coins", "coinAmount", "coin_amount", "coinsAdded", "coinsDeducted"]);
+  const itemId = String(item.id || "");
+
+  const related = state.transactions
+    .filter((candidate) => candidate !== item)
+    .map((candidate) => ({
+      candidate,
+      timestamp: directTransactionTimestamp(candidate),
+    }))
+    .filter((entry) => entry.timestamp > 0)
+    .filter((entry) => {
+      const candidate = entry.candidate;
+      const candidateUid = transactionUid(candidate);
+      const candidateAmount = getFirstValue(candidate, ["amount", "data.attributes.amount", "attributes.amount", "payment.amount"]);
+      const candidateCoins = getFirstValue(candidate, ["coins", "coinAmount", "coin_amount", "coinsAdded", "coinsDeducted"]);
+      const candidateId = String(candidate.id || "");
+
+      if (uid && candidateUid && uid !== candidateUid) return false;
+      if (amount && candidateAmount && String(amount) !== String(candidateAmount)) return false;
+      if (coins && candidateCoins && String(coins) !== String(candidateCoins)) return false;
+
+      return itemId.includes(candidateId) || candidateId.includes(itemId) ||
+        (uid && (amount || coins));
+    })
+    .sort((a, b) => b.timestamp - a.timestamp);
+
+  return related.length ? related[0].timestamp : 0;
+}
+
+function directTransactionTimestamp(item) {
+  const value = getFirstValue(item, [
+    "paidAt",
+    "completedAt",
+    "timestamp",
+    "createdAt",
+    "updatedAt",
+    "created_at",
+    "updated_at",
+    "date",
+    "time",
+    "data.attributes.paid_at",
+    "data.attributes.created_at",
+    "data.attributes.updated_at",
+    "attributes.paid_at",
+    "attributes.created_at",
+    "attributes.updated_at",
+    "payment.createdAt",
+    "checkout.createdAt",
+  ]);
+  const number = Number(value || 0);
+
+  if (Number.isFinite(number) && number > 0) {
+    return number < 1000000000000 ? number * 1000 : number;
+  }
+
+  const parsed = Date.parse(value || "");
+  return Number.isNaN(parsed) ? 0 : parsed;
 }
 
 function transactionTitle(item) {
@@ -1069,7 +1152,7 @@ function transactionAmountLabel(item) {
   ]);
   if (amount === undefined || amount === null || amount === "") return "";
 
-  const typeText = String(item.type || item.source || "").toLowerCase();
+  const typeText = String(item.type || item.source || item.originalSource || "").toLowerCase();
   const currency = String(getFirstValue(item, [
     "currency",
     "paymentCurrency",
@@ -1078,7 +1161,8 @@ function transactionAmountLabel(item) {
     "payment.currency",
   ]) || "").toUpperCase();
 
-  if (currency === "PHP" || typeText.includes("paymongo") || String(item.source || "").indexOf("paymongo") >= 0) {
+  if (currency === "PHP" || typeText.includes("paymongo") || String(item.source || "").indexOf("paymongo") >= 0 ||
+    String(item.originalSource || "").indexOf("paymongo") >= 0) {
     return formatPeso(payMongoAmountToPeso(amount));
   }
 
