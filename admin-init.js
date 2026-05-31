@@ -43,6 +43,7 @@ auth.onAuthStateChanged(async (user) => {
   adminEmail.textContent = user.email || user.uid;
   showApp();
   startListeners();
+  initCandleRangeButtons();
 });
 
 document.querySelectorAll(".nav-btn").forEach((button) => {

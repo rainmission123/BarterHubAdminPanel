@@ -1,5 +1,32 @@
 window.selectedRange = 7;
 
+function initCandleRangeButtons() {
+  const buttons = document.querySelectorAll(".range-btn");
+  if (!buttons.length) return;
+
+  const savedRange = localStorage.getItem("paymongoCandleRange") || "7";
+  window.selectedRange = Number(savedRange);
+
+  buttons.forEach((button) => {
+    button.classList.toggle(
+      "active",
+      button.dataset.days === savedRange
+    );
+
+    button.addEventListener("click", () => {
+      const days = button.dataset.days || "7";
+
+      localStorage.setItem("paymongoCandleRange", days);
+      window.selectedRange = Number(days);
+
+      buttons.forEach((btn) => btn.classList.remove("active"));
+      button.classList.add("active");
+
+      renderRevenueCandleChart();
+    });
+  });
+}
+
 function renderCharts() {
   renderActivityChart();
   renderStatusChart();

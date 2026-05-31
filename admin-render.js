@@ -1,3 +1,12 @@
+const PAGE_SIZE = 10;
+
+window.pageState = window.pageState || {
+  verification: 1,
+  deletion: 1,
+  users: 1,
+  transactions: 1,
+};
+
 function renderAll() {
   renderDashboard();
   renderVerification();
@@ -72,13 +81,22 @@ function renderVerification() {
     return searchUser(user, search);
   });
 
+  const totalPages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
+
+    if (window.pageState.verification > totalPages) {
+      window.pageState.verification = totalPages;
+    }
+
+    const start = (window.pageState.verification - 1) * PAGE_SIZE;
+    const pagedRows = rows.slice(start, start + PAGE_SIZE);
+
   const list = $("verificationList");
-  if (rows.length === 0) {
+  if (pagedRows.length === 0) {
     list.innerHTML = empty("No ID verification records found.");
     return;
   }
 
-  list.innerHTML = rows.map((user) => {
+  list.innerHTML = pagedRows.map((user) => {
     const idStatus = getIdStatus(user);
     const front = user.idFrontUrl || user.idFrontPath || "";
     const back = user.idBackUrl || user.idBackPath || "";
@@ -107,6 +125,11 @@ function renderVerification() {
         </div>
       </article>`;
   }).join("");
+  renderPagination(
+    "verificationPagination",
+    "verification",
+    totalPages
+  );
 }
 
 function renderDeletionRequests() {
@@ -258,5 +281,33 @@ function renderTransactionDiagnostics(selectedSource) {
   container.innerHTML = errors.slice(0, 6).map(([source, status]) => `
     <span class="diagnostic-pill error">${escapeHtml(source)}: ${escapeHtml(status.error)}</span>
   `).join("");
+}
+
+function renderPagination(containerId, key, totalPages) {
+  const container = $(containerId);
+  if (!container) return;
+
+  const current = window.pageState[key] || 1;
+
+  container.innerHTML = `
+    <button class="secondary-btn" ${current <= 1 ? "disabled" : ""}
+      onclick="changePage('${key}', -1)">
+      Previous
+    </button>
+
+    <span class="page-indicator">
+      Page ${current} of ${totalPages}
+    </span>
+
+    <button class="secondary-btn" ${current >= totalPages ? "disabled" : ""}
+      onclick="changePage('${key}', 1)">
+      Next
+    </button>
+  `;
+}
+
+function changePage(key, direction) {
+  window.pageState[key] = Math.max(1, (window.pageState[key] || 1) + direction);
+  renderAll();
 }
 
