@@ -24,6 +24,11 @@ function startListeners() {
     renderAll();
   });
 
+  db.ref("paymongo_payments").on("value", (snapshot) => {
+  state.paymongoPayments = snapshot.val() || {};
+  renderAll();
+  });
+
   listenAdminTransactions();
   listenTransactions();
 }

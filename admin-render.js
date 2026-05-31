@@ -21,35 +21,29 @@ function renderDashboard() {
 
   const stats = state.adminStats || {};
 
-  const paymongoRows = allTransactionRows().filter((item) =>
-  item.source === "paymongo_payments"
-    );
+  // TOP CARDS ONLY:
+  // Direct total from Firebase node: paymongo_payments
+  // Hindi ito gumagamit ng PayMongo Candles daily calculation.
+  const paymongoRows = Object.values(state.paymongoPayments || {});
 
-    const uniquePayments = new Map();
+  const payments = paymongoRows.length;
 
-    paymongoRows.forEach((item) => {
-      const key =
-        item.paymentId ||
-        item.paymongoPaymentId ||
-        item.id ||
-        `${item.uid}_${item.amount}_${item.timestamp}`;
+  const revenue = paymongoRows.reduce((sum, item) => {
+    const amount = Number(item.amount || 0);
 
-      if (!uniquePayments.has(key)) {
-        uniquePayments.set(key, item);
-      }
-    });
+    if (!Number.isFinite(amount) || amount <= 0) {
+      return sum;
+    }
 
-    const payments = uniquePayments.size;
+    // PayMongo usually stores amount in centavos.
+    // Example: 25000 = ₱250.00
+    if (amount > 999) {
+      return sum + amount / 100;
+    }
 
-    const revenue = Array.from(uniquePayments.values()).reduce((sum, item) => {
-      const amount = Number(item.amount || 0);
-
-      if (amount > 999) {
-        return sum + amount / 100;
-      }
-
-      return sum + amount;
-    }, 0);
+    // If already stored as peso amount.
+    return sum + amount;
+  }, 0);
 
   $("statUsers").textContent =
     stats.totalUsers !== undefined ? stats.totalUsers : users.length;
