@@ -19,8 +19,11 @@ const state = {
   users: {},
   publicUsers: {},
   deletionRequests: {},
+  adminStats: {},
   transactions: [],
+  usingAdminTransactionFeed: false,
   transactionReadStatus: {},
+  transactionSourceListeners: {},
   transactionUserListeners: {},
   adminUid: "",
   pendingAction: null,
@@ -140,13 +143,13 @@ function applyTheme(theme) {
 function startListeners() {
   db.ref("users").on("value", (snapshot) => {
     state.users = snapshot.val() || {};
-    listenUserTransactions();
+    syncLegacyTransactionListeners();
     renderAll();
   });
 
   db.ref("public_users").on("value", (snapshot) => {
     state.publicUsers = snapshot.val() || {};
-    listenUserTransactions();
+    syncLegacyTransactionListeners();
     renderAll();
   });
 
@@ -155,7 +158,41 @@ function startListeners() {
     renderAll();
   });
 
+  db.ref("admin_stats").on("value", (snapshot) => {
+    state.adminStats = snapshot.val() || {};
+    renderAll();
+  }, () => {
+    state.adminStats = {};
+    renderAll();
+  });
+
+  listenAdminTransactions();
   listenTransactions();
+}
+
+function listenAdminTransactions() {
+  const source = "admin_transactions";
+
+  db.ref(source).orderByChild("timestamp").limitToLast(150).on("value", (snapshot) => {
+    const rows = flattenNode(source, snapshot.val() || {})
+      .map((item) => Object.assign({
+        rawSource: source,
+        originalSource: item.originalSource || item.sourcePath || source,
+      }, item));
+
+    state.transactions = state.transactions
+      .filter((item) => item.rawSource !== source)
+      .concat(rows);
+    state.usingAdminTransactionFeed = rows.length > 0;
+    setTransactionReadStatus(source, rows.length);
+    syncLegacyTransactionListeners();
+    renderAll();
+  }, (error) => {
+    state.usingAdminTransactionFeed = false;
+    setTransactionReadStatus(source, 0, error);
+    syncLegacyTransactionListeners();
+    renderAll();
+  });
 }
 
 function listenTransactions() {
@@ -192,11 +229,13 @@ function listenTransactions() {
     "orders",
     "checkout_sessions",
     "checkoutSessions",
-    "transactions",
     "user_transactions",
     "userTransactions",
   ].forEach((source) => {
-    db.ref(source).limitToLast(80).on("value", (snapshot) => {
+    if (state.usingAdminTransactionFeed || state.transactionSourceListeners[source]) return;
+
+    const ref = db.ref(source).limitToLast(80);
+    const handler = (snapshot) => {
       const rows = flattenNode(canonicalSource(source), snapshot.val() || {})
         .map((item) => Object.assign({rawSource: source}, item));
       state.transactions = state.transactions
@@ -204,11 +243,25 @@ function listenTransactions() {
         .concat(rows);
       setTransactionReadStatus(source, rows.length);
       renderAll();
-    }, (error) => {
+    };
+    const errorHandler = (error) => {
       setTransactionReadStatus(source, 0, error);
       renderAll();
-    });
+    };
+
+    ref.on("value", handler, errorHandler);
+    state.transactionSourceListeners[source] = {ref, handler};
   });
+}
+
+function syncLegacyTransactionListeners() {
+  if (state.usingAdminTransactionFeed) {
+    stopLegacyTransactionListeners();
+    return;
+  }
+
+  listenTransactions();
+  listenUserTransactions();
 }
 
 function listenUserTransactions() {
@@ -250,6 +303,28 @@ function listenUserTransactions() {
     delete state.transactionUserListeners[uid];
     state.transactions = state.transactions.filter((item) => item.rawSource !== "transactions/" + uid);
   });
+}
+
+function stopUserTransactionListeners() {
+  Object.keys(state.transactionUserListeners).forEach((uid) => {
+    const listener = state.transactionUserListeners[uid];
+    listener.ref.off("value", listener.handler);
+    delete state.transactionUserListeners[uid];
+    state.transactions = state.transactions.filter((item) => item.rawSource !== "transactions/" + uid);
+    delete state.transactionReadStatus["transactions/" + uid];
+  });
+}
+
+function stopLegacyTransactionListeners() {
+  Object.keys(state.transactionSourceListeners).forEach((source) => {
+    const listener = state.transactionSourceListeners[source];
+    listener.ref.off("value", listener.handler);
+    delete state.transactionSourceListeners[source];
+    state.transactions = state.transactions.filter((item) => item.rawSource !== source);
+    delete state.transactionReadStatus[source];
+  });
+
+  stopUserTransactionListeners();
 }
 
 function setTransactionReadStatus(source, count, error) {
@@ -434,12 +509,13 @@ function renderDashboard() {
   const pendingDeletion = Object.values(state.deletionRequests).filter((request) => request.status === "pending").length;
   const payments = allTransactionRows().filter((item) => item.source.indexOf("paymongo") >= 0).length;
   const revenue = payMongoRevenue();
+  const stats = state.adminStats || {};
 
-  $("statUsers").textContent = users.length;
-  $("statPendingIds").textContent = pendingIds;
-  $("statDeletion").textContent = pendingDeletion;
-  $("statPayments").textContent = payments;
-  $("statRevenue").textContent = formatPeso(revenue);
+  $("statUsers").textContent = stats.totalUsers !== undefined ? stats.totalUsers : users.length;
+  $("statPendingIds").textContent = stats.pendingIdVerifications !== undefined ? stats.pendingIdVerifications : pendingIds;
+  $("statDeletion").textContent = stats.pendingDeletionRequests !== undefined ? stats.pendingDeletionRequests : pendingDeletion;
+  $("statPayments").textContent = stats.totalPayments !== undefined ? stats.totalPayments : payments;
+  $("statRevenue").textContent = formatPeso(stats.totalRevenue !== undefined ? stats.totalRevenue : revenue);
 }
 
 function renderCharts() {
