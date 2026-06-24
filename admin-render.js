@@ -93,8 +93,6 @@ function renderVerification() {
 
   list.innerHTML = pagedRows.map((user) => {
     const idStatus = getIdStatus(user);
-    const front = user.idFrontUrl || user.idFrontPath || "";
-    const back = user.idBackUrl || user.idBackPath || "";
     const approveDisabled = idStatus === "verified" ? "disabled" : "";
     const rejectDisabled = idStatus === "rejected" ? "disabled" : "";
     const pendingDisabled = idStatus === "pending" ? "disabled" : "";
@@ -112,7 +110,10 @@ function renderVerification() {
           </div>
           <span class="badge ${idStatus}">${escapeHtml(idStatus)}</span>
         </div>
-        <div class="image-row">${imageTag(front, "Front ID")}${imageTag(back, "Back ID")}</div>
+        <div class="image-row">
+          ${verificationImageTag(user, "front", "Front ID")}
+          ${verificationImageTag(user, "back", "Back ID")}
+        </div>
         <div class="actions">
           <button class="success-btn" ${approveDisabled} onclick="setIdStatus('${user.uid}', 'verified')">Approve</button>
           <button class="danger-btn" ${rejectDisabled} onclick="setIdStatus('${user.uid}', 'rejected')">Reject</button>
@@ -125,6 +126,87 @@ function renderVerification() {
     "verification",
     totalPages
   );
+  hydrateIdVerificationImages(pagedRows);
+}
+
+function verificationImageTag(user, side, alt) {
+  const directUrl = side === "front" ? user.idFrontUrl : user.idBackUrl;
+  const storagePath = side === "front" ? user.idFrontPath : user.idBackPath;
+
+  if (directUrl) {
+    return imageTag(directUrl, alt);
+  }
+
+  if (!storagePath) {
+    return `<div class="empty">${escapeHtml(alt)} not uploaded</div>`;
+  }
+
+  const cached = state.idImageUrls && state.idImageUrls[user.uid];
+  const cachedUrl = cached && cached[side + "Url"];
+
+  if (cachedUrl && Number(cached.expiresAt || 0) > Date.now() + 60000) {
+    return imageTag(cachedUrl, alt);
+  }
+
+  if (cached && cached.error) {
+    return `<div class="empty">${escapeHtml(alt)} unavailable</div>`;
+  }
+
+  return `<div class="empty" data-id-image-uid="${escapeHtml(user.uid)}" data-id-image-side="${escapeHtml(side)}">${escapeHtml(alt)} loading...</div>`;
+}
+
+async function hydrateIdVerificationImages(users) {
+  const callable = functions.httpsCallable("getIdVerificationImageUrls");
+  const candidates = users.filter((user) => {
+    if (!user || !user.uid) return false;
+    if (user.idFrontUrl && user.idBackUrl) return false;
+    if (!user.idFrontPath && !user.idBackPath) return false;
+
+    const cached = state.idImageUrls && state.idImageUrls[user.uid];
+    if (cached && cached.loading) return false;
+    if (cached && cached.error) return false;
+    if (cached && Number(cached.expiresAt || 0) > Date.now() + 60000) {
+      return false;
+    }
+
+    return true;
+  });
+
+  if (candidates.length === 0) {
+    return;
+  }
+
+  state.idImageUrls = state.idImageUrls || {};
+
+  candidates.forEach((user) => {
+    state.idImageUrls[user.uid] = Object.assign(
+        {},
+        state.idImageUrls[user.uid] || {},
+        {loading: true, error: ""}
+    );
+  });
+
+  await Promise.all(candidates.map(async (user) => {
+    try {
+      const result = await callable({uid: user.uid});
+      state.idImageUrls[user.uid] = Object.assign(
+          {},
+          result.data || {},
+          {loading: false, error: ""}
+      );
+    } catch (error) {
+      state.idImageUrls[user.uid] = {
+        loading: false,
+        error: error.message || "Unable to load ID images.",
+      };
+      console.error("Unable to load ID verification images", {
+        uid: user.uid,
+        error: error,
+      });
+    }
+  }));
+
+  renderVerification();
 }
 
 function renderDeletionRequests() {

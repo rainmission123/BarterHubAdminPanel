@@ -25,6 +25,7 @@ const state = {
   transactionReadStatus: {},
   transactionSourceListeners: {},
   transactionUserListeners: {},
+  idImageUrls: {},
   adminUid: "",
   pendingAction: null,
 };
